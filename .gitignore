@@ -1,0 +1,13 @@
+# 依赖
+node_modules/
+# 构建产物
+dist/
+# 日志
+*.log
+.DS_Store
+# Vite 热更新产生的临时文件
+vite.config.js.timestamp-*.mjs
+# 本地部署配置与内部文档（仅本地保留，不随源码开源）
+deploy/
+安全审计报告.md
+*.local.toml

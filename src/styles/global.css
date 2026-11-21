@@ -1,0 +1,156 @@
+/* =====================================================================
+ * global.css —— 全局样式（原生 CSS，简约 B 端浅色风格）
+ * 主色：#165DFF；背景浅灰；白色卡片；去除多余装饰。
+ * 这里集中定义可复用的按钮、卡片、标签、表单控件等基础样式。
+ * ===================================================================== */
+
+:root {
+  --primary: #165dff;
+  --primary-hover: #0e42d2;
+  --primary-light: #e8f0ff;
+  --bg: #f5f6f8;
+  --card: #ffffff;
+  --border: #e5e6eb;
+  --border-light: #f2f3f5;
+  --text: #1d2129;
+  --text-2: #4e5969;
+  --text-3: #86909c;
+  --success: #00b42a;
+  --warning: #ff7d00;
+  --danger: #f53f3f;
+  --radius: 8px;
+}
+
+* { box-sizing: border-box; }
+
+html, body, #app { height: 100%; margin: 0; }
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC',
+    'Microsoft YaHei', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  font-size: 14px;
+  -webkit-font-smoothing: antialiased;
+}
+
+button { font-family: inherit; }
+
+/* ----------------------- 卡片 ----------------------- */
+.wb-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px;
+}
+.wb-card-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* ----------------------- 按钮 ----------------------- */
+.wb-btn {
+  height: 34px;
+  padding: 0 16px;
+  border-radius: 6px;
+  border: 1px solid transparent;
+  font-size: 13px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+  white-space: nowrap;
+}
+.wb-btn-primary { background: var(--primary); color: #fff; }
+.wb-btn-primary:hover { background: var(--primary-hover); }
+.wb-btn-default { background: #fff; border-color: var(--border); color: var(--text-2); }
+.wb-btn-default:hover { border-color: var(--primary); color: var(--primary); }
+.wb-btn-danger { background: #fff; border-color: #fbc4c4; color: var(--danger); }
+.wb-btn-danger:hover { background: var(--danger); color: #fff; border-color: var(--danger); }
+.wb-btn-sm { height: 28px; padding: 0 10px; font-size: 12px; }
+.wb-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+/* 点击回弹动画：缩小 → 回弹放大 → 归位（配合 .is-bounce 使用，动画结束移除即可重复触发） */
+.wb-btn-bounce.is-bounce { animation: wb-bounce 0.4s cubic-bezier(0.36, 0.07, 0.19, 0.97); }
+@keyframes wb-bounce {
+  0%   { transform: scale(1); }
+  30%  { transform: scale(0.88); }
+  60%  { transform: scale(1.08); }
+  100% { transform: scale(1); }
+}
+
+/* ----------------------- 标签 / 徽标 ----------------------- */
+.wb-tag {
+  display: inline-block;
+  font-size: 12px;
+  padding: 2px 8px;
+  border-radius: 4px;
+  line-height: 1.5;
+  white-space: nowrap;
+}
+.wb-tag-default { background: #f2f3f5; color: var(--text-2); }
+.wb-tag-primary { background: var(--primary-light); color: var(--primary); }
+.wb-tag-success { background: #e8ffea; color: var(--success); }
+.wb-tag-warning { background: #fff7e8; color: var(--warning); }
+.wb-tag-danger { background: #ffece8; color: var(--danger); }
+
+/* 进度条 */
+.wb-progress {
+  width: 100%;
+  height: 6px;
+  background: #f2f3f5;
+  border-radius: 3px;
+  overflow: hidden;
+}
+.wb-progress-bar { height: 100%; background: var(--primary); border-radius: 3px; }
+.wb-progress-bar.danger { background: var(--danger); }
+.wb-progress-bar.warning { background: var(--warning); }
+
+/* ----------------------- 表单控件 ----------------------- */
+.wb-form-item {
+  margin-bottom: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.wb-form-label {
+  font-size: 13px;
+  color: var(--text-2);
+}
+.wb-form-label .req { color: var(--danger); margin-left: 2px; }
+.wb-field {
+  height: 36px;
+  padding: 0 12px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-size: 13px;
+  outline: none;
+  color: var(--text);
+  background: #fff;
+  width: 100%;
+}
+.wb-field:focus { border-color: var(--primary); }
+textarea.wb-field { height: auto; padding: 10px 12px; resize: vertical; min-height: 72px; }
+.wb-form-row { display: flex; gap: 16px; }
+.wb-form-row .wb-form-item { flex: 1; }
+
+/* ----------------------- 页面通用布局 ----------------------- */
+.wb-page { padding: 20px 24px; }
+.wb-page-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+.wb-page-title { font-size: 18px; font-weight: 600; color: var(--text); }
+.wb-page-actions { display: flex; gap: 10px; }
+
+/* 滚动条美化（Webkit） */
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-thumb { background: #d9dce0; border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: #c0c4cc; }
