@@ -4,7 +4,7 @@
  * 功能：文档列表、分类筛选、模拟文件下载。
  */
 import { ref, reactive, computed } from 'vue'
-import { resources as mockResources, deepClone } from '../mock.js'
+import { resources as mockResources, deepClone, today } from '../mock.js'
 import { store } from '../store.js'
 import { useToast } from '../composables/useToast.js'
 import DataTable from '../components/DataTable.vue'
@@ -127,7 +127,6 @@ function onFileChange(e) {
 function confirmUpload() {
   if (!uploadForm.file) { toast.error('请先选择要上传的文件'); return }
   const maxId = Math.max(...resourceList.value.map(r => parseInt(r.id.replace('R-', '')) || 0))
-  const today = new Date().toISOString().slice(0, 10)
   const size = uploadForm.fileSize || (uploadForm.file.size < 1024 * 1024
     ? (uploadForm.file.size / 1024).toFixed(1) + ' KB'
     : (uploadForm.file.size / 1024 / 1024).toFixed(1) + ' MB')
@@ -136,7 +135,7 @@ function confirmUpload() {
     name: sanitizeFileName(uploadForm.name || uploadForm.file.name),
     category: uploadForm.category,
     size,
-    uploadTime: today,
+    uploadTime: today(),
     owner: store?.currentUser?.name || '我'
   })
   uploadVisible.value = false

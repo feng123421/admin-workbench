@@ -4,7 +4,7 @@
  * 功能：客户列表、成交状态筛选、新增回访记录、回访提醒（临近/逾期标红）。
  */
 import { ref, reactive, computed } from 'vue'
-import { customers as mockCustomers, deepClone } from '../mock.js'
+import { customers as mockCustomers, deepClone, today, nowTime } from '../mock.js'
 import { useToast } from '../composables/useToast.js'
 import DataTable from '../components/DataTable.vue'
 import FilterBar from '../components/FilterBar.vue'
@@ -13,9 +13,6 @@ import Icon from '../components/Icon.vue'
 
 const toast = useToast()
 const customerList = ref(deepClone(mockCustomers))
-
-// 当前日期（演示基准）
-const TODAY = '2026-10-21'
 
 const filters = reactive({ keyword: '', dealStatus: '' })
 const filterFields = [
@@ -44,8 +41,8 @@ const filtered = computed(() => {
   })
 })
 
-// 回访是否紧急（今天及之前需回访）
-function isUrgent(date) { return date <= TODAY }
+// 回访是否紧急：以运行当天（本地时区）为基准，不再写死演示基准日
+function isUrgent(date) { return date <= today() }
 
 // 新增回访记录弹窗
 const followVisible = ref(false)
@@ -59,9 +56,7 @@ function openFollow(row) {
 }
 function submitFollow() {
   if (!followForm.content.trim()) { toast.error('请输入回访内容'); return }
-  const now = new Date()
-  const time = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0') + '-' + String(now.getDate()).padStart(2, '0') + ' ' +
-    String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0')
+  const time = nowTime()
   activeCustomer.value.followRecords.unshift({ time, content: followForm.content.trim() })
   if (followForm.nextVisit) activeCustomer.value.nextVisit = followForm.nextVisit
   followVisible.value = false

@@ -139,6 +139,30 @@ textarea.wb-field { height: auto; padding: 10px 12px; resize: vertical; min-heig
 .wb-form-row { display: flex; gap: 16px; }
 .wb-form-row .wb-form-item { flex: 1; }
 
+/* ----------------------- 密码明文预览 ----------------------- */
+/* 容器相对定位，输入框右侧留出按钮空间；仅作用于密码框，不影响其他 .wb-field */
+.wb-pwd-field { position: relative; display: block; }
+.wb-pwd-field .wb-field { padding-right: 40px; }
+.wb-pwd-toggle {
+  position: absolute;
+  right: 4px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: #86909c;
+  cursor: pointer;
+}
+.wb-pwd-toggle:hover { color: var(--primary); background: rgba(22, 93, 255, 0.06); }
+.wb-pwd-toggle:focus-visible { outline: 2px solid var(--primary); outline-offset: 1px; }
+
 /* ----------------------- 页面通用布局 ----------------------- */
 .wb-page { padding: 20px 24px; }
 .wb-page-header {

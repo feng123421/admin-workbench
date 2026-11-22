@@ -17,7 +17,7 @@ import {
   notifications as mockNotifications,
   roles as mockRoles,
   hashPassword,
-  demoCredential,
+  demoPasswords,
   deepClone
 } from './mock.js'
 
@@ -97,8 +97,30 @@ export function canAccess(page) {
   return !!role && role.modules.includes(page)
 }
 
+// ------------------------- 登录输入规则（界面与鉴权层共用） -------------------------
+// 单一来源：Login.vue 用它做输入拦截，login() 用它做提交兜底，避免规则不一致
+// 演示约定：账号最多 11 位、密码最多 6 位（初始演示密码 123456 正好 6 位）
+export const LOGIN_RULES = {
+  maxUsername: 11,
+  maxPassword: 6,
+  usernamePattern: /^[A-Za-z0-9_@.-]+$/,
+  usernameInvalid: /[^A-Za-z0-9_@.-]/g
+}
+
 // ------------------------- 登录 / 登出 -------------------------
 export function login(username, password) {
+  // 入参校验（防御纵深）：绕过界面直接调用 login() 时同样受限，
+  // 同时避免超长字符串进入 hashPassword 的同步循环导致主线程卡顿
+  if (
+    typeof username !== 'string' || typeof password !== 'string' ||
+    !username || !password ||
+    username.length > LOGIN_RULES.maxUsername ||
+    password.length > LOGIN_RULES.maxPassword ||
+    !LOGIN_RULES.usernamePattern.test(username)
+  ) {
+    return { success: false, message: '账号或密码格式不正确' }
+  }
+
   // 摘要比较：前端不保存、不比较明文密码
   const acc = accounts.find(a => a.username === username && a.passwordHash === hashPassword(password))
   if (!acc) return { success: false, message: '账号或密码错误' }
@@ -126,18 +148,81 @@ export function isLoggedIn() {
 /** 修改密码：校验旧密码后真实更新（演示环境本次会话有效，刷新后重置） */
 export function changePassword(oldPwd, newPwd, confirmPwd) {
   if (!store.currentUser) return { success: false, message: '登录状态已失效，请重新登录' }
+  if (
+    typeof oldPwd !== 'string' || typeof newPwd !== 'string' || typeof confirmPwd !== 'string' ||
+    [oldPwd, newPwd, confirmPwd].some(p => p.length > LOGIN_RULES.maxPassword)
+  ) {
+    return { success: false, message: '密码长度不能超过 6 位' }
+  }
   const acc = accounts.find(a => a.username === store.currentUser.username)
   if (!acc || acc.passwordHash !== hashPassword(oldPwd)) {
     return { success: false, message: '当前密码不正确' }
   }
-  if (!newPwd || newPwd.length < 6) return { success: false, message: '新密码至少 6 位' }
+  // 上限与下限都为 6，因此新密码必须恰好 6 位
+  if (!newPwd || newPwd.length < LOGIN_RULES.maxPassword) {
+    return { success: false, message: '新密码需为 6 位' }
+  }
   if (newPwd !== confirmPwd) return { success: false, message: '两次输入的新密码不一致' }
 
-  // 演示账号共用同一初始密码，统一更新以保持「一键填充」逻辑自洽
-  const nextHash = hashPassword(newPwd)
-  accounts.forEach(a => { a.passwordHash = nextHash })
-  demoCredential.password = newPwd
+  // 只更新当前登录账号：其他角色的密码不受影响
+  // demoPasswords 同步该账号的演示密码，保证登录页「一键填充」仍能填对
+  acc.passwordHash = hashPassword(newPwd)
+  demoPasswords[acc.username] = newPwd
   return { success: true, message: '密码修改成功（演示环境：本次会话生效，刷新后重置）' }
+}
+
+// ------------------------- 员工账号管理（仅超级管理员） -------------------------
+// 模块加载时快照内置演示账号，保护演示基线不被删除
+const builtinUsernames = new Set(accounts.map(a => a.username))
+
+/** 是否为内置演示账号（页面据此决定是否展示删除按钮） */
+export function isBuiltinAccount(username) {
+  return builtinUsernames.has(username)
+}
+
+/**
+ * 开设新员工账号：校验通过后写入共享账号表，登录校验与登录页「一键填充」立即可用。
+ * 演示环境为纯前端内存数据，刷新页面后重置。
+ */
+export function createAccount({ username, name, role, password } = {}) {
+  if (store.currentUser?.role !== 'superadmin' || !canAccess('permission')) {
+    return { success: false, message: '无权创建账号，请使用超级管理员登录' }
+  }
+  const u = typeof username === 'string' ? username.trim() : ''
+  const n = typeof name === 'string' ? name.trim() : ''
+  const r = typeof role === 'string' ? role : ''
+  const p = typeof password === 'string' ? password : ''
+  if (!u || u.length > LOGIN_RULES.maxUsername || !LOGIN_RULES.usernamePattern.test(u)) {
+    return { success: false, message: '账号需为 11 位以内的字母、数字、_、@、.、-，且不能为空' }
+  }
+  if (accounts.some(a => a.username === u)) return { success: false, message: '该账号已存在' }
+  if (!n || n.length > 20 || /[<>]/.test(n)) {
+    return { success: false, message: '姓名需为 1~20 个字符，且不能包含尖括号' }
+  }
+  // 新员工不允许直接授予超级管理员，避免开出可配置权限的账号
+  if (r === 'superadmin' || !mockRoles.some(x => x.id === r)) {
+    return { success: false, message: '请选择一个有效的员工角色' }
+  }
+  if (p.length !== LOGIN_RULES.maxPassword) {
+    return { success: false, message: '初始密码需为 6 位' }
+  }
+  accounts.push({ username: u, passwordHash: hashPassword(p), name: n, role: r })
+  demoPasswords[u] = p
+  return { success: true, message: `账号「${u}」创建成功`, account: { username: u, name: n, role: r } }
+}
+
+/** 删除账号：内置演示账号与当前登录账号不可删除 */
+export function deleteAccount(username) {
+  if (store.currentUser?.role !== 'superadmin' || !canAccess('permission')) {
+    return { success: false, message: '无权删除账号' }
+  }
+  const i = accounts.findIndex(a => a.username === username)
+  if (i < 0) return { success: false, message: '账号不存在' }
+  if (builtinUsernames.has(username)) return { success: false, message: '内置演示账号不可删除' }
+  if (store.currentUser?.username === username) return { success: false, message: '不能删除当前登录账号' }
+  accounts.splice(i, 1)
+  delete demoPasswords[username]
+  return { success: true, message: `账号「${username}」已删除` }
 }
 
 // ------------------------- 页面切换（带权限守卫） -------------------------

@@ -4,30 +4,72 @@
  * 账号密码登录，区分角色；提供演示账号一键填充。
  */
 import { ref, reactive } from 'vue'
-import { login } from '../store.js'
-import { accounts, roleLabelMap, demoCredential } from '../mock.js'
+import { login, LOGIN_RULES } from '../store.js'
+import { accounts, roleLabelMap, demoCredential, demoPasswords } from '../mock.js'
 import { useToast } from '../composables/useToast.js'
 import Icon from '../components/Icon.vue'
 
 const toast = useToast()
 const form = reactive({ username: '', password: '' })
 const loading = ref(false)
+// 密码明文预览：登录组件每次挂载默认关闭，登出后不会残留明文状态
+const showPassword = ref(false)
 
-// 演示账号一键填充（使用共享的演示凭据，改密后自动同步）
+// 输入拦截规则：长度上限 + 账号字符白名单
+// 说明：账号仅用于与本地账号表精确匹配，不含中文/特殊符号，可安全收紧；
+// 密码只限制长度，不限制字符，避免影响「修改密码」等正常场景。
+const MAX_USERNAME = LOGIN_RULES.maxUsername
+const MAX_PASSWORD = LOGIN_RULES.maxPassword
+const USERNAME_INVALID = LOGIN_RULES.usernameInvalid
+const USERNAME_PATTERN = LOGIN_RULES.usernamePattern
+
+// 账号用 :value + @input 手动同步，保证粘贴 / 拖拽 / 输入法带入的非法字符
+// 在写进状态之前就被清掉（原生 maxlength 负责长度上限）
+function onUsernameInput(e) {
+  const cleaned = String(e.target.value || '').replace(USERNAME_INVALID, '').slice(0, MAX_USERNAME)
+  form.username = cleaned
+  if (e.target.value !== cleaned) e.target.value = cleaned
+}
+
+// 密码不限制字符，但同样在写进状态前截断长度；
+// 原生 maxlength 只约束键盘/粘贴，手动同步可覆盖脚本赋值、自动填充等路径
+function onPasswordInput(e) {
+  const cleaned = String(e.target.value || '').slice(0, MAX_PASSWORD)
+  form.password = cleaned
+  if (e.target.value !== cleaned) e.target.value = cleaned
+}
+
+// 演示账号一键填充：按账号取各自的当前演示密码（改密只影响该账号）
 function fill(acc) {
   form.username = acc.username
-  form.password = demoCredential.password
+  form.password = demoPasswords[acc.username] || ''
 }
 
 function onSubmit() {
-  if (!form.username || !form.password) {
+  // 防重复提交：模拟延迟期间按钮 disabled，但回车等方式仍可能触发 submit
+  if (loading.value) return
+
+  const username = form.username.trim()
+  const password = form.password
+  form.username = username
+  if (!username || !password) {
     toast.error('请输入账号和密码')
     return
   }
+  // 提交层兜底校验：即使绕过界面直接构造数据，也不会进入摘要计算
+  if (username.length > MAX_USERNAME || password.length > MAX_PASSWORD) {
+    toast.error(`账号最多 ${MAX_USERNAME} 位、密码最多 ${MAX_PASSWORD} 位`)
+    return
+  }
+  if (!USERNAME_PATTERN.test(username)) {
+    toast.error('账号仅支持字母、数字、_、@、.、-')
+    return
+  }
+
   loading.value = true
   // 模拟网络延迟
   setTimeout(() => {
-    const res = login(form.username, form.password)
+    const res = login(username, password)
     loading.value = false
     if (!res.success) {
       toast.error(res.message)
@@ -50,17 +92,40 @@ function onSubmit() {
       <form class="wb-login-form" @submit.prevent="onSubmit">
         <div class="wb-form-item">
           <label class="wb-form-label">账号</label>
-          <input v-model="form.username" class="wb-field" placeholder="请输入账号" autocomplete="username" />
+          <input
+            :value="form.username"
+            class="wb-field"
+            placeholder="请输入账号"
+            autocomplete="username"
+            spellcheck="false"
+            :maxlength="MAX_USERNAME"
+            @input="onUsernameInput"
+          />
         </div>
         <div class="wb-form-item">
           <label class="wb-form-label">密码</label>
-          <input
-            v-model="form.password"
-            type="password"
-            class="wb-field"
-            placeholder="请输入密码"
-            autocomplete="current-password"
-          />
+          <div class="wb-pwd-field">
+            <input
+              :value="form.password"
+              :type="showPassword ? 'text' : 'password'"
+              class="wb-field"
+              placeholder="请输入密码"
+              autocomplete="current-password"
+              spellcheck="false"
+              :maxlength="MAX_PASSWORD"
+              @input="onPasswordInput"
+            />
+            <button
+              type="button"
+              class="wb-pwd-toggle"
+              :aria-label="showPassword ? '隐藏密码' : '显示密码'"
+              :aria-pressed="showPassword"
+              :title="showPassword ? '隐藏密码' : '显示密码'"
+              @click="showPassword = !showPassword"
+            >
+              <Icon :name="showPassword ? 'eye-off' : 'eye'" :size="16" />
+            </button>
+          </div>
         </div>
         <button type="submit" class="wb-btn wb-btn-primary wb-login-submit" :disabled="loading">
           {{ loading ? '登录中…' : '登 录' }}
@@ -68,16 +133,17 @@ function onSubmit() {
       </form>
 
       <div class="wb-login-demo">
-        <div class="wb-login-demo-title">演示账号（统一密码：{{ demoCredential.password }}）</div>
+        <div class="wb-login-demo-title">演示账号（初始密码 {{ demoCredential.password }}，点击自动填入）</div>
         <div class="wb-login-demo-list">
           <button
             v-for="acc in accounts"
             :key="acc.username"
             class="wb-demo-chip"
+            :title="roleLabelMap[acc.role] + ' · ' + acc.username"
             @click="fill(acc)"
           >
             <Icon name="user" :size="13" />
-            {{ roleLabelMap[acc.role] }}
+            {{ acc.name }}
           </button>
         </div>
         <p class="wb-login-secure-tip">前端模拟鉴权，仅用于功能演示，请勿用于生产环境</p>

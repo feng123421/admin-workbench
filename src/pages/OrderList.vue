@@ -4,7 +4,7 @@
  * 功能：筛选、排序（金额/时间）、分页、导出 CSV（模拟）。
  */
 import { ref, reactive, computed } from 'vue'
-import { orders as mockOrders, deepClone } from '../mock.js'
+import { orders as mockOrders, deepClone, today } from '../mock.js'
 import { useToast } from '../composables/useToast.js'
 import DataTable from '../components/DataTable.vue'
 import Pagination from '../components/Pagination.vue'
@@ -94,7 +94,7 @@ function exportCsv() {
   const url = URL.createObjectURL(blob)
   const a = document.createElement('a')
   a.href = url
-  a.download = '订单数据_' + new Date().toISOString().slice(0, 10) + '.csv'
+  a.download = '订单数据_' + today() + '.csv'
   document.body.appendChild(a)
   a.click()
   document.body.removeChild(a)

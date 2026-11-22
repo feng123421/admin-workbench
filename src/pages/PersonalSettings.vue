@@ -4,15 +4,27 @@
  * 功能：修改密码、工作台个性化配置、消息提醒开关。
  */
 import { reactive, computed, ref } from 'vue'
-import { store, changePassword } from '../store.js'
+import { store, changePassword, LOGIN_RULES } from '../store.js'
 import { modules } from '../mock.js'
 import { useToast } from '../composables/useToast.js'
 import Select from '../components/Select.vue'
+import Icon from '../components/Icon.vue'
 
 const toast = useToast()
 
+// 密码上限与登录页共用同一规则：账号 11 位 / 密码 6 位
+const PWD_MAX = LOGIN_RULES.maxPassword
+// 三个改密框各自的明文预览开关，互不影响
+const showPwd = reactive({ old: false, new: false, confirm: false })
+
 // 修改密码：校验当前密码后真实更新（演示环境本次会话有效）
 const pwd = reactive({ old: '', new: '', confirm: '' })
+// 与登录页一致：手动同步截断，覆盖原生 maxlength 挡不住的脚本赋值 / 自动填充
+function onPwdInput(key, e) {
+  const cleaned = String(e.target.value || '').slice(0, PWD_MAX)
+  pwd[key] = cleaned
+  if (e.target.value !== cleaned) e.target.value = cleaned
+}
 function savePwd() {
   const res = changePassword(pwd.old, pwd.new, pwd.confirm)
   if (!res.success) { toast.error(res.message); return }
@@ -82,15 +94,30 @@ function clickPwd() { bounce(pwdBouncing); savePwd() }
         <div class="wb-settings-form">
           <div class="wb-form-item">
             <label class="wb-form-label">当前密码</label>
-            <input v-model="pwd.old" type="password" class="wb-field" placeholder="请输入当前密码" />
+            <div class="wb-pwd-field">
+              <input :value="pwd.old" :type="showPwd.old ? 'text' : 'password'" class="wb-field" :maxlength="PWD_MAX" autocomplete="off" spellcheck="false" placeholder="请输入当前密码" @input="onPwdInput('old', $event)" />
+              <button type="button" class="wb-pwd-toggle" :aria-label="showPwd.old ? '隐藏当前密码' : '显示当前密码'" :aria-pressed="showPwd.old" :title="showPwd.old ? '隐藏当前密码' : '显示当前密码'" @click="showPwd.old = !showPwd.old">
+                <Icon :name="showPwd.old ? 'eye-off' : 'eye'" :size="16" />
+              </button>
+            </div>
           </div>
           <div class="wb-form-item">
             <label class="wb-form-label">新密码</label>
-            <input v-model="pwd.new" type="password" class="wb-field" placeholder="至少 6 位" />
+            <div class="wb-pwd-field">
+              <input :value="pwd.new" :type="showPwd.new ? 'text' : 'password'" class="wb-field" :maxlength="PWD_MAX" autocomplete="new-password" spellcheck="false" placeholder="请输入 6 位新密码" @input="onPwdInput('new', $event)" />
+              <button type="button" class="wb-pwd-toggle" :aria-label="showPwd.new ? '隐藏新密码' : '显示新密码'" :aria-pressed="showPwd.new" :title="showPwd.new ? '隐藏新密码' : '显示新密码'" @click="showPwd.new = !showPwd.new">
+                <Icon :name="showPwd.new ? 'eye-off' : 'eye'" :size="16" />
+              </button>
+            </div>
           </div>
           <div class="wb-form-item">
             <label class="wb-form-label">确认新密码</label>
-            <input v-model="pwd.confirm" type="password" class="wb-field" placeholder="再次输入新密码" />
+            <div class="wb-pwd-field">
+              <input :value="pwd.confirm" :type="showPwd.confirm ? 'text' : 'password'" class="wb-field" :maxlength="PWD_MAX" autocomplete="new-password" spellcheck="false" placeholder="再次输入 6 位新密码" @input="onPwdInput('confirm', $event)" />
+              <button type="button" class="wb-pwd-toggle" :aria-label="showPwd.confirm ? '隐藏确认密码' : '显示确认密码'" :aria-pressed="showPwd.confirm" :title="showPwd.confirm ? '隐藏确认密码' : '显示确认密码'" @click="showPwd.confirm = !showPwd.confirm">
+                <Icon :name="showPwd.confirm ? 'eye-off' : 'eye'" :size="16" />
+              </button>
+            </div>
           </div>
           <p class="wb-pwd-tip">演示环境：校验当前密码后生效，仅本次会话有效，刷新页面将重置为初始密码。</p>
           <button

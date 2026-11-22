@@ -4,7 +4,7 @@
  * 功能：新增、编辑、查看详情、删除（二次确认）、批量修改状态、筛选、排序、分页。
  */
 import { ref, reactive, computed } from 'vue'
-import { tasks as mockTasks, deepClone } from '../mock.js'
+import { tasks as mockTasks, deepClone, today } from '../mock.js'
 import { useToast } from '../composables/useToast.js'
 import { openConfirm } from '../store.js'
 import DataTable from '../components/DataTable.vue'
@@ -165,7 +165,7 @@ function submitForm() {
   } else {
     const maxId = Math.max(...taskList.value.map(t => parseInt(t.id.replace('T-', '')) || 0))
     const newId = 'T-' + (maxId + 1)
-    taskList.value.unshift({ ...deepClone(form), id: newId, createTime: '2026-10-21' })
+    taskList.value.unshift({ ...deepClone(form), id: newId, createTime: today() })
     toast.success('任务已创建')
   }
   formVisible.value = false

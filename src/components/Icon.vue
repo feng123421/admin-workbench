@@ -38,7 +38,9 @@ const icons = {
   'chevron-right': '<path d="M9 6l6 6-6 6"/>',
   'chevron-down': '<path d="M6 9l6 6 6-6"/>',
   menu: '<path d="M4 6h16M4 12h16M4 18h16"/>',
-  refresh: '<path d="M20 11a8 8 0 1 0-2 5.5"/><path d="M20 5v6h-6"/>'
+  refresh: '<path d="M20 11a8 8 0 1 0-2 5.5"/><path d="M20 5v6h-6"/>',
+  eye: '<path d="M2 12s3.6-6 10-6 10 6 10 6-3.6 6-10 6S2 12 2 12z"/><circle cx="12" cy="12" r="2.8"/>',
+  'eye-off': '<path d="M3 3l18 18"/><path d="M10.6 6.2A10 10 0 0 1 12 6c6.4 0 10 6 10 6a17 17 0 0 1-3.2 3.7"/><path d="M6.2 7.6C3.6 9.4 2 12 2 12s3.6 6 10 6a10 10 0 0 0 4-.8"/><path d="M9.9 9.9a3 3 0 0 0 4.2 4.2"/>'
 }
 
 // 安全说明：v-html 的内容只来自上方「硬编码白名单映射」，props.name 仅作查表 key，

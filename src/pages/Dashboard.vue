@@ -8,7 +8,7 @@
 import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
 import * as echarts from 'echarts'
 import { store, navigate } from '../store.js'
-import { metricsByRole, projects, orders, recentActivities, roleLabelMap } from '../mock.js'
+import { metricsByRole, projects, orders, recentActivities, roleLabelMap, today } from '../mock.js'
 
 // 当前角色的指标卡片
 const metrics = computed(() => metricsByRole[store.currentUser?.role] || [])
@@ -108,7 +108,7 @@ const quickActions = [
     <!-- 欢迎语 -->
     <div class="wb-dash-welcome">
       <span>你好，{{ store.currentUser?.name }}（{{ roleLabelMap[store.currentUser?.role] }}）</span>
-      <span class="wb-dash-date">数据更新于 2026-10-21</span>
+      <span class="wb-dash-date">数据更新于 {{ today() }}</span>
     </div>
 
     <!-- 指标卡片 -->
